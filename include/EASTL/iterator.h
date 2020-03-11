@@ -1057,11 +1057,13 @@ namespace eastl
 	// It turns out that one compiler has a problem: GCC 4.6. That version added support for 
 	// range-based for loops but has broken argument-dependent lookup which was fixed in GCC 4.7.
 	//
+#ifndef EASTL_BEGIN_END_ENABLED
 	#if (defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION == 4006))
 		#define EASTL_BEGIN_END_ENABLED 0
 	#else
 		#define EASTL_BEGIN_END_ENABLED 1
 	#endif
+#endif
 
 	#if EASTL_BEGIN_END_ENABLED
 		template <typename Container>
