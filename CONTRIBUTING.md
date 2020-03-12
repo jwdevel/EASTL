@@ -33,6 +33,15 @@ git submodule update --init
 
 EASTL uses CMake as its build system.
 
+It takes advantage of CMake's concept of 'configurations' to have different builds for Debug, Release, etc.
+
+For Windows with Visual Studio, this will result in a project with multiple configurations, as is typical.
+
+However, note that for `make`-style backends, CMake does _not_ support multiple configurations in one Makefile. See [CMake docs](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) for reference.
+On these systems, you should create a separate build dir per configuration, and use CMake to generate a Makefile for each of them. See the below scripts for more information.
+
+#### Single Multi-config directory
+
 * Create and navigate to "your_build_folder":
 	* mkdir your_build_folder && cd your_build_folder
 * Generate build scripts:
@@ -79,5 +88,47 @@ ctest -C MinSizeRel
 popd
 popd
 ```
+
+#### Multiple one-config directories
+
+On Unix-style systems, CMake will typically produce a `make`-based project.
+However, such projects can only handle one configuration (such as "Debug" or "Release").
+Thus, we need to produce a separate project for each configuration.
+The below script can help with this procedure.
+
+```bash
+#!/usr/bin/env bash
+set -eu
+
+: ${BUILD_DIR:=build}
+
+mkdir -p "$BUILD_DIR"
+cd "$BUILD_DIR"
+
+# Build each configuration in a separate dir
+for variant in Debug Release RelWithDebInfo MinSizeRel
+do
+     if [ -e "$variant" ]
+     then
+         echo "==== SKIP: $variant (already built) ===="
+         continue
+     fi
+
+     echo "==== BUILD: $variant ===="
+     mkdir -p "$variant"
+     (
+         cd "$variant"
+         cmake ../.. -DCMAKE_BUILD_TYPE:STRING="$variant" -DEASTL_BUILD_TESTS:BOOL=ON -DEASTL_BUILD_BENCHMARK:BOOL=OFF
+         cmake --build .
+         # Run tests
+         (
+             cd test
+             ctest
+         )
+     )
+done
+```
+
+#### Other Notes
 
 The value of EASTL_BUILD_BENCHMARK can be toggled to `ON` in order to build projects that include the benchmark program.
