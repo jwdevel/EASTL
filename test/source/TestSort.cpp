@@ -4,6 +4,7 @@
 
 
 #include <EABase/eabase.h>
+#include <EASTL/internal/config.h>
 
 // Some versions of GCC generate an array bounds warning in opt builds which 
 // doesn't say what line below it comes from and doesn't appear to be a valid 
@@ -287,9 +288,14 @@ int TestSort()
 
 				intArray = intArraySaved;
 				vector<int64_t> buffer(intArray.size());
-				merge_sort_buffer(intArray.begin(), intArray.end(), &buffer[0]);
-				EATEST_VERIFY(is_sorted(intArray.begin(), intArray.end()));
-				EATEST_VERIFY(eastl::accumulate(begin(intArraySaved), end(intArraySaved), int64_t(0)) == expectedSum);
+				#if !EASTL_EMPTY_REFERENCE_ASSERT_ENABLED // The code "&buffer[0]" is illegal for an empty vector if this is disabled.
+				if (!buffer.empty())
+				#endif
+				{
+					merge_sort_buffer(intArray.begin(), intArray.end(), &buffer[0]);
+					EATEST_VERIFY(is_sorted(intArray.begin(), intArray.end()));
+					EATEST_VERIFY(eastl::accumulate(begin(intArraySaved), end(intArraySaved), int64_t(0)) == expectedSum);
+				}
 
 				intArray = intArraySaved;
 				quick_sort(intArray.begin(), intArray.end());
